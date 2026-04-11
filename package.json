@@ -1,0 +1,22 @@
+{
+  "name": "serverless-attendance-face-recognition",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "cdk:synth": "cdk synth",
+    "cdk:deploy:dev": "cdk deploy AttendanceStack-dev",
+    "cdk:deploy:staging": "cdk deploy AttendanceStack-staging",
+    "cdk:deploy:prod": "cdk deploy AttendanceStack-prod"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.12",
+    "aws-cdk": "^2.154.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.154.1",
+    "constructs": "^10.3.0"
+  }
+}
