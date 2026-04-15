@@ -2,12 +2,22 @@ const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
 const resultBox = document.getElementById("resultBox");
 
-const token = localStorage.getItem("idToken");
+const token = localStorage.getItem("accessToken");
+
+// 🔍 Debug
+console.log("TOKEN:", token);
+if (token) {
+  const payload = JSON.parse(atob(token.split(".")[1]));
+  console.log("TOKEN PAYLOAD:", payload);
+}
 
 if (!token || isTokenExpired(token)) {
   logout();
 }
+
 setInterval(refreshToken, 50 * 60 * 1000);
+
+// 🎥 Start camera
 async function startCamera() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -20,79 +30,108 @@ async function startCamera() {
   }
 }
 
+// 🟢 STEP 1: Get upload URL
 async function getUploadUrl() {
   const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/upload-url`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+      Authorization: `Bearer ${token}`, // ✅ FIXED
     },
-    body: JSON.stringify({}),
   });
 
   const data = await res.json();
+
   if (!res.ok) {
-    throw new Error("Failed to get upload URL");
+    console.error("UPLOAD URL ERROR:", data);
+    throw new Error(data.message || "Failed to get upload URL");
   }
-  // If body is string (API Gateway case), parse it
+
+  // Handle API Gateway format
   return typeof data.body === "string" ? JSON.parse(data.body) : data;
 }
 
+// 🟢 STEP 2: Upload image to S3
 async function uploadImage(uploadUrl, blob) {
   await fetch(uploadUrl, {
     method: "PUT",
-    headers: { "Content-Type": "image/jpeg" },
+    headers: {
+      "Content-Type": "image/jpeg",
+    },
     body: blob,
   });
 }
 
+// 🟢 STEP 3: Poll result
 async function pollResult(uploadId) {
-  for (let i = 0; i < 10; i += 1) {
+  for (let i = 0; i < 10; i++) {
     const res = await fetch(
       `${window.APP_CONFIG.API_BASE_URL}/result/${uploadId}`,
       {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`, // ✅ ADD
+          Authorization: `Bearer ${token}`, // ✅ FIXED
         },
       },
     );
-    if (!res.ok) {
-      return { state: "ERROR", message: "API failed" };
-    }
+
     const data = await res.json();
-    if (data.state && data.state !== "PENDING") return data;
+
+    if (!res.ok) {
+      console.error("RESULT ERROR:", data);
+      throw new Error(data.message || "Failed to fetch result"); // ✅ FIXED
+    }
+
+    if (data.state && data.state !== "PENDING") {
+      return data;
+    }
+
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
-  return { state: "TIMEOUT", message: "No response within polling window" };
+
+  return {
+    state: "TIMEOUT",
+    message: "No response within polling window",
+  };
 }
 
+// 🎯 Main flow
 async function captureAndSubmit() {
   try {
-    // existing code
     resultBox.textContent = "Capturing...";
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
+
     canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
 
     const blob = await new Promise((resolve) =>
       canvas.toBlob(resolve, "image/jpeg", 0.92),
     );
+
+    // STEP 1
     const presign = await getUploadUrl();
     console.log("PRESIGN RESPONSE:", presign);
-    await uploadImage(presign.upload_url, blob);
+
+    // STEP 2 ✅ FIXED keys
+    await uploadImage(presign.uploadUrl, blob);
 
     resultBox.textContent = "Uploaded. Waiting for recognition...";
-    const result = await pollResult(presign.upload_id);
+
+    // STEP 3 ✅ FIXED keys
+    const result = await pollResult(presign.uploadId);
+
     resultBox.textContent = JSON.stringify(result, null, 2);
   } catch (err) {
+    console.error(err);
     resultBox.textContent = "Error: " + err.message;
   }
 }
 
+// 🎮 Buttons
 document
   .getElementById("startCameraBtn")
   .addEventListener("click", startCamera);
+
 document
   .getElementById("captureBtn")
   .addEventListener("click", captureAndSubmit);

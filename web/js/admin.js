@@ -1,4 +1,4 @@
-const token = localStorage.getItem("idToken");
+const token = localStorage.getItem("accessToken");
 
 if (!token || isTokenExpired(token)) {
   logout();
@@ -57,7 +57,7 @@ async function loadRecords() {
     `${window.APP_CONFIG.API_BASE_URL}/attendance?${query}`,
     {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        Authorization: `Bearer ${token.trim()}`,
       },
     },
   );
