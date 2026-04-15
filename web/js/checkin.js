@@ -69,16 +69,15 @@ async function pollResult(uploadId) {
       `${window.APP_CONFIG.API_BASE_URL}/result/${uploadId}`,
       {
         headers: {
-<<<<<<< HEAD
-          Authorization: `Bearer ${token}`, // ✅ FIXED
-=======
-          Authorization: `Bearer ${localStorage.getItem("idToken")}`,
           Authorization: `Bearer ${token}`,
+        },
+      }
+    );
     const data = await res.json();
 
     if (!res.ok) {
       console.error("RESULT ERROR:", data);
-      throw new Error(data.message || "Failed to fetch result"); // ✅ FIXED
+      throw new Error(data.message || "Failed to fetch result");
     }
 
     if (data.state && data.state !== "PENDING") {
