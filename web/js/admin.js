@@ -1,5 +1,5 @@
 function getAuthToken() {
-  return localStorage.getItem("accessToken") || localStorage.getItem("idToken");
+  return localStorage.getItem("idToken") || localStorage.getItem("accessToken");
 }
 
 const token = getAuthToken();
