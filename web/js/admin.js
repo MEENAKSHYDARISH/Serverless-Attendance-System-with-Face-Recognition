@@ -57,7 +57,7 @@ async function loadRecords() {
     `${window.APP_CONFIG.API_BASE_URL}/attendance?${query}`,
     {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem("idToken")}`,
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
       },
     },
   );
