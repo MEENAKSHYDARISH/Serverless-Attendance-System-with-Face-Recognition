@@ -1,41 +1,50 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Attendance Admin</title>
-  <link rel="stylesheet" href="/css/styles.css" />
-</head>
-<body>
-  <main class="container">
-    <h1>Attendance Admin</h1>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Attendance Admin</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <div style="display: flex; justify-content: flex-end">
+      <button onclick="logout()">Logout</button>
+    </div>
+    <main class="container">
+      <h1>Attendance Admin</h1>
 
-    <section class="card">
-      <div class="grid">
-        <input id="employeeId" placeholder="employee_id" />
-        <input id="dateFrom" type="date" />
-        <input id="dateTo" type="date" />
-        <select id="status">
-          <option value="">All Status</option>
-          <option value="PRESENT">PRESENT</option>
-          <option value="LATE">LATE</option>
-          <option value="ABSENT">ABSENT</option>
-        </select>
-        <button id="loadBtn">Load Records</button>
-      </div>
-      <div id="summary"></div>
-      <table id="table">
-        <thead>
-          <tr>
-            <th>Employee</th><th>Name</th><th>Date</th><th>Status</th><th>Clock In</th><th>Clock Out</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </section>
-  </main>
+      <section class="card">
+        <div class="grid">
+          <input id="employeeId" placeholder="employee_id" />
+          <input id="dateFrom" type="date" />
+          <input id="dateTo" type="date" />
+          <select id="status">
+            <option value="">All Status</option>
+            <option value="PRESENT">PRESENT</option>
+            <option value="LATE">LATE</option>
+            <option value="ABSENT">ABSENT</option>
+          </select>
+          <button id="loadBtn">Load Records</button>
+        </div>
+        <div id="summary"></div>
+        <table id="table">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Name</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Clock In</th>
+              <th>Clock Out</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </section>
+    </main>
 
-  <script src="/js/config.js"></script>
-  <script src="/js/admin.js"></script>
-</body>
+    <script src="/js/config.js?v=2"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/admin.js"></script>
+  </body>
 </html>
