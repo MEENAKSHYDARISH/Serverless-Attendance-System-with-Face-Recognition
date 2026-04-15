@@ -19,9 +19,9 @@ exports.handler = async () => {
   const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
 
   return json(200, {
-    upload_id: uploadId,
-    s3_key: key,
-    upload_url: uploadUrl,
-    expires_in_seconds: 300,
+    uploadId: uploadId,
+    s3Key: key,
+    uploadUrl: uploadUrl,
+    expiresInSeconds: 300,
   });
 };

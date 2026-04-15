@@ -2,7 +2,7 @@ const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
 const resultBox = document.getElementById("resultBox");
 
-const token = localStorage.getItem("accessToken");
+const token = localStorage.getItem("idToken");
 
 // 🔍 Debug
 console.log("TOKEN:", token);
@@ -36,11 +36,7 @@ async function getUploadUrl() {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-<<<<<<< HEAD
-      Authorization: `Bearer ${token}`, // ✅ FIXED
-=======
-      Authorization: `Bearer ${localStorage.getItem("idToken")}`,
->>>>>>> e1c363612f5678de1cd1a5fe3d3b8747c350b72a
+      Authorization: `Bearer ${token}`,
     },
   });
 
@@ -77,11 +73,7 @@ async function pollResult(uploadId) {
           Authorization: `Bearer ${token}`, // ✅ FIXED
 =======
           Authorization: `Bearer ${localStorage.getItem("idToken")}`,
->>>>>>> e1c363612f5678de1cd1a5fe3d3b8747c350b72a
-        },
-      },
-    );
-
+          Authorization: `Bearer ${token}`,
     const data = await res.json();
 
     if (!res.ok) {
