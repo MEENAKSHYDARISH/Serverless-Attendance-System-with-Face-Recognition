@@ -372,21 +372,12 @@ export class AttendanceStack extends cdk.Stack {
     runtime: lambda.Runtime,
     deadLetterQueue?: sqs.IQueue,
   ): lambda.Function {
+    const serviceName = path.basename(codePath);
+
     return new lambda.Function(this, id, {
       runtime,
-      handler: `${codePath}/index.handler`,
-      code: lambda.Code.fromAsset(path.join(__dirname, ".."), {
-        exclude: [
-          "*",
-          "!services/",
-          `!${codePath}/`,
-          `!${codePath}/**`,
-          "!services/common/",
-          "!services/common/**",
-          "!node_modules/",
-          "!node_modules/**",
-        ],
-      }),
+      handler: `${serviceName}/index.handler`,
+      code: lambda.Code.fromAsset(path.join(__dirname, "..", "services")),
       timeout: cdk.Duration.seconds(30),
       memorySize: 512,
       environment,
