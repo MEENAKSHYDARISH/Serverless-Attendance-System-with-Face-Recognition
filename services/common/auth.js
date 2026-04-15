@@ -1,5 +1,9 @@
 function getClaims(event) {
-  return event?.requestContext?.authorizer?.jwt?.claims || {};
+  return (
+    event?.requestContext?.authorizer?.jwt?.claims ||
+    event?.requestContext?.authorizer?.claims ||
+    {}
+  );
 }
 
 function hasAdminAccess(event) {

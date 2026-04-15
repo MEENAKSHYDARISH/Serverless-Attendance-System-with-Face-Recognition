@@ -1,4 +1,8 @@
-const token = localStorage.getItem("idToken");
+function getAuthToken() {
+  return localStorage.getItem("accessToken") || localStorage.getItem("idToken");
+}
+
+const token = getAuthToken();
 
 if (!token || isTokenExpired(token)) {
   logout();
@@ -11,7 +15,7 @@ async function getEmployeePhotoUploadUrl(employeeId, fileName) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${getAuthToken()}`,
     },
   });
 
@@ -43,7 +47,7 @@ async function registerEmployee(employeeId, name, department, shiftStart, s3Key)
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${getAuthToken()}`,
     },
     body: JSON.stringify({
       employee_id: employeeId,
@@ -155,7 +159,7 @@ async function loadRecords() {
     `${window.APP_CONFIG.API_BASE_URL}/attendance?${query}`,
     {
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${getAuthToken()}`,
       },
     },
   );
