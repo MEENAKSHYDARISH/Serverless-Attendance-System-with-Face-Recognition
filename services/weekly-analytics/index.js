@@ -1,8 +1,10 @@
-const AWS = require('aws-sdk');
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, ScanCommand } = require('@aws-sdk/lib-dynamodb');
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const { localDateParts } = require('../common/time');
 
-const ddb = new AWS.DynamoDB.DocumentClient();
-const s3 = new AWS.S3();
+const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+const s3 = new S3Client({});
 
 function mondayOfCurrentWeek(dateObj) {
   const d = new Date(dateObj);
@@ -26,7 +28,9 @@ exports.handler = async () => {
   const startDate = toDateString(start);
   const endDate = toDateString(end);
 
-  const attendance = await ddb.scan({ TableName: process.env.ATTENDANCE_TABLE }).promise();
+  const attendance = await ddb.send(new ScanCommand({
+    TableName: process.env.ATTENDANCE_TABLE,
+  }));
   const items = (attendance.Items || []).filter((x) => x.date >= startDate && x.date <= endDate);
 
   const byEmployee = {};
@@ -62,12 +66,12 @@ exports.handler = async () => {
     employees,
   };
 
-  await s3.putObject({
+  await s3.send(new PutObjectCommand({
     Bucket: process.env.REPORTS_BUCKET,
     Key: `weekly/${startDate}_to_${endDate}.json`,
     Body: JSON.stringify(summary, null, 2),
     ContentType: 'application/json',
-  }).promise();
+  }));
 
   return summary;
 };

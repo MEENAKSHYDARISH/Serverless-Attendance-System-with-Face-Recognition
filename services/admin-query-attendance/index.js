@@ -1,8 +1,10 @@
-const AWS = require('aws-sdk');
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, QueryCommand, ScanCommand } = require('@aws-sdk/lib-dynamodb');
 const { json, forbidden } = require('../common/http');
 const { hasAdminAccess } = require('../common/auth');
 
-const ddb = new AWS.DynamoDB.DocumentClient();
+const client = new DynamoDBClient({});
+const ddb = DynamoDBDocumentClient.from(client);
 
 exports.handler = async (event) => {
   if (!hasAdminAccess(event)) return forbidden('Admin group required');
@@ -15,7 +17,7 @@ exports.handler = async (event) => {
   const limit = Number(qs.limit || '100');
 
   if (employeeId) {
-    const data = await ddb.query({
+    const data = await ddb.send(new QueryCommand({
       TableName: process.env.ATTENDANCE_TABLE,
       KeyConditionExpression: 'employee_id = :e AND #d BETWEEN :from AND :to',
       ExpressionAttributeNames: { '#d': 'date' },
@@ -26,18 +28,23 @@ exports.handler = async (event) => {
       },
       Limit: limit,
       ScanIndexForward: false,
-    }).promise();
+    }));
 
     const items = status ? (data.Items || []).filter((x) => x.status === status) : (data.Items || []);
     return json(200, { items });
   }
 
-  const scan = await ddb.scan({ TableName: process.env.ATTENDANCE_TABLE, Limit: limit }).promise();
+  const scan = await ddb.send(new ScanCommand({
+    TableName: process.env.ATTENDANCE_TABLE,
+    Limit: limit,
+  }));
+
   const items = (scan.Items || []).filter((x) => {
     if (status && x.status !== status) return false;
     if (dateFrom && x.date < dateFrom) return false;
     if (dateTo && x.date > dateTo) return false;
     return true;
   });
+
   return json(200, { items });
 };
