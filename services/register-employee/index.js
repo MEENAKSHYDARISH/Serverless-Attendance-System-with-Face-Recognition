@@ -1,11 +1,13 @@
 const { RekognitionClient, IndexFacesCommand } = require('@aws-sdk/client-rekognition');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, UpdateCommand } = require('@aws-sdk/lib-dynamodb');
+const { S3Client, CopyObjectCommand } = require('@aws-sdk/client-s3');
 const { json, badRequest, forbidden } = require('../common/http');
 const { hasAdminAccess } = require('../common/auth');
 
 const rekognition = new RekognitionClient({});
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+const s3 = new S3Client({});
 
 exports.handler = async (event) => {
   if (!hasAdminAccess(event)) return forbidden('Admin group required');
@@ -19,9 +21,17 @@ exports.handler = async (event) => {
 
   if (!employeeId || !s3Key || !name) return badRequest('employee_id, name and s3_key are required');
 
+  // Copy image from raw bucket to employee photos bucket
+  const employeePhotoKey = `employees/${employeeId}_${name.replace(/\s+/g, '_').toLowerCase()}.jpg`;
+  await s3.send(new CopyObjectCommand({
+    CopySource: `${process.env.RAW_UPLOAD_BUCKET}/${s3Key}`,
+    Bucket: process.env.EMPLOYEE_PHOTOS_BUCKET,
+    Key: employeePhotoKey,
+  }));
+
   const indexResp = await rekognition.send(new IndexFacesCommand({
     CollectionId: process.env.REKOGNITION_COLLECTION_ID,
-    Image: { S3Object: { Bucket: process.env.EMPLOYEE_PHOTOS_BUCKET, Name: s3Key } },
+    Image: { S3Object: { Bucket: process.env.EMPLOYEE_PHOTOS_BUCKET, Name: employeePhotoKey } },
     ExternalImageId: employeeId,
     MaxFaces: 1,
     QualityFilter: 'HIGH',
