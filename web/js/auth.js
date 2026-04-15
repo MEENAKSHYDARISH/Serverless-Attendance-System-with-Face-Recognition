@@ -30,7 +30,13 @@ async function login() {
       localStorage.setItem("refreshToken", RefreshToken);
       localStorage.setItem("accessToken", AccessToken);
 
-      window.location.href = "/index.html";
+      // Check if user is admin
+      const payload = JSON.parse(atob(IdToken.split(".")[1]));
+      const groups = payload['cognito:groups'] || [];
+      const isAdmin = Array.isArray(groups) ? groups.includes('admin') : false;
+
+      // Redirect based on role
+      window.location.href = isAdmin ? "/admin.html" : "/index.html";
     } else {
       alert(data.message || "Login failed");
       console.log(data);
