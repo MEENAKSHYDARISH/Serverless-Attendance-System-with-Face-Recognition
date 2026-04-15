@@ -1,24 +1,25 @@
-import * as path from 'path';
-import * as cdk from 'aws-cdk-lib';
-import { Construct } from 'constructs';
-import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
-import * as s3 from 'aws-cdk-lib/aws-s3';
-import * as s3n from 'aws-cdk-lib/aws-s3-notifications';
-import * as iam from 'aws-cdk-lib/aws-iam';
-import * as lambda from 'aws-cdk-lib/aws-lambda';
-import * as apigwv2 from 'aws-cdk-lib/aws-apigatewayv2';
-import * as integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations';
-import * as authorizers from 'aws-cdk-lib/aws-apigatewayv2-authorizers';
-import * as cognito from 'aws-cdk-lib/aws-cognito';
-import * as events from 'aws-cdk-lib/aws-events';
-import * as targets from 'aws-cdk-lib/aws-events-targets';
-import * as kms from 'aws-cdk-lib/aws-kms';
-import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
-import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
-import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
-import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as path from "path";
+import * as cdk from "aws-cdk-lib";
+import { Construct } from "constructs";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
+import * as s3 from "aws-cdk-lib/aws-s3";
+import * as s3n from "aws-cdk-lib/aws-s3-notifications";
+import * as iam from "aws-cdk-lib/aws-iam";
+import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as apigwv2 from "aws-cdk-lib/aws-apigatewayv2";
+import * as integrations from "aws-cdk-lib/aws-apigatewayv2-integrations";
+import * as authorizers from "aws-cdk-lib/aws-apigatewayv2-authorizers";
+import * as cognito from "aws-cdk-lib/aws-cognito";
+import * as events from "aws-cdk-lib/aws-events";
+import * as targets from "aws-cdk-lib/aws-events-targets";
+import * as kms from "aws-cdk-lib/aws-kms";
+import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
+import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
+import * as s3deploy from "aws-cdk-lib/aws-s3-deployment";
+import * as sqs from "aws-cdk-lib/aws-sqs";
+import { StackProps } from "aws-cdk-lib";
 
-interface AttendanceStackProps extends cdk.StackProps {
+interface AttendanceStackProps extends StackProps {
   envName: string;
 }
 
@@ -29,12 +30,12 @@ export class AttendanceStack extends cdk.Stack {
     const envName = props.envName;
     const appName = `attendance-${envName}`;
 
-    const dataKey = new kms.Key(this, 'DataKey', {
+    const dataKey = new kms.Key(this, "DataKey", {
       alias: `alias/${appName}-data`,
       enableKeyRotation: true,
     });
 
-    const rawUploadBucket = new s3.Bucket(this, 'RawUploadBucket', {
+    const rawUploadBucket = new s3.Bucket(this, "RawUploadBucket", {
       bucketName: `${appName}-raw-${this.account}`,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       encryption: s3.BucketEncryption.KMS,
@@ -43,7 +44,7 @@ export class AttendanceStack extends cdk.Stack {
       eventBridgeEnabled: false,
     });
 
-    const employeePhotosBucket = new s3.Bucket(this, 'EmployeePhotosBucket', {
+    const employeePhotosBucket = new s3.Bucket(this, "EmployeePhotosBucket", {
       bucketName: `${appName}-employee-photos-${this.account}`,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       versioned: true,
@@ -52,7 +53,7 @@ export class AttendanceStack extends cdk.Stack {
       enforceSSL: true,
     });
 
-    const reportsBucket = new s3.Bucket(this, 'ReportsBucket', {
+    const reportsBucket = new s3.Bucket(this, "ReportsBucket", {
       bucketName: `${appName}-reports-${this.account}`,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       versioned: true,
@@ -61,7 +62,7 @@ export class AttendanceStack extends cdk.Stack {
       enforceSSL: true,
     });
 
-    const webBucket = new s3.Bucket(this, 'WebBucket', {
+    const webBucket = new s3.Bucket(this, "WebBucket", {
       bucketName: `${appName}-web-${this.account}`,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       versioned: true,
@@ -69,9 +70,12 @@ export class AttendanceStack extends cdk.Stack {
       enforceSSL: true,
     });
 
-    const employeesTable = new dynamodb.Table(this, 'EmployeesTable', {
+    const employeesTable = new dynamodb.Table(this, "EmployeesTable", {
       tableName: `${appName}-employees`,
-      partitionKey: { name: 'employee_id', type: dynamodb.AttributeType.STRING },
+      partitionKey: {
+        name: "employee_id",
+        type: dynamodb.AttributeType.STRING,
+      },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       pointInTimeRecovery: true,
       encryption: dynamodb.TableEncryption.CUSTOMER_MANAGED,
@@ -79,10 +83,13 @@ export class AttendanceStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
-    const attendanceTable = new dynamodb.Table(this, 'AttendanceTable', {
+    const attendanceTable = new dynamodb.Table(this, "AttendanceTable", {
       tableName: `${appName}-attendance`,
-      partitionKey: { name: 'employee_id', type: dynamodb.AttributeType.STRING },
-      sortKey: { name: 'date', type: dynamodb.AttributeType.STRING },
+      partitionKey: {
+        name: "employee_id",
+        type: dynamodb.AttributeType.STRING,
+      },
+      sortKey: { name: "date", type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       pointInTimeRecovery: true,
       encryption: dynamodb.TableEncryption.CUSTOMER_MANAGED,
@@ -90,16 +97,16 @@ export class AttendanceStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
     attendanceTable.addGlobalSecondaryIndex({
-      indexName: 'DateStatusIndex',
-      partitionKey: { name: 'date', type: dynamodb.AttributeType.STRING },
-      sortKey: { name: 'status', type: dynamodb.AttributeType.STRING },
+      indexName: "DateStatusIndex",
+      partitionKey: { name: "date", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "status", type: dynamodb.AttributeType.STRING },
       projectionType: dynamodb.ProjectionType.ALL,
     });
 
-    const uploadResultsTable = new dynamodb.Table(this, 'UploadResultsTable', {
+    const uploadResultsTable = new dynamodb.Table(this, "UploadResultsTable", {
       tableName: `${appName}-upload-results`,
-      partitionKey: { name: 'upload_id', type: dynamodb.AttributeType.STRING },
-      timeToLiveAttribute: 'expires_at',
+      partitionKey: { name: "upload_id", type: dynamodb.AttributeType.STRING },
+      timeToLiveAttribute: "expires_at",
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       pointInTimeRecovery: true,
       encryption: dynamodb.TableEncryption.CUSTOMER_MANAGED,
@@ -107,29 +114,29 @@ export class AttendanceStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
-    const recognitionDlq = new sqs.Queue(this, 'RecognitionDlq', {
+    const recognitionDlq = new sqs.Queue(this, "RecognitionDlq", {
       queueName: `${appName}-recognition-dlq`,
       retentionPeriod: cdk.Duration.days(14),
       encryption: sqs.QueueEncryption.KMS,
       encryptionMasterKey: dataKey,
     });
 
-    const userPool = new cognito.UserPool(this, 'UserPool', {
+    const userPool = new cognito.UserPool(this, "UserPool", {
       userPoolName: `${appName}-users`,
       selfSignUpEnabled: false,
       signInAliases: { email: true },
       standardAttributes: { email: { required: true, mutable: false } },
     });
 
-    const userPoolClient = new cognito.UserPoolClient(this, 'UserPoolClient', {
+    const userPoolClient = new cognito.UserPoolClient(this, "UserPoolClient", {
       userPool,
       authFlows: { userPassword: true, userSrp: true },
     });
 
-    const adminGroup = new cognito.CfnUserPoolGroup(this, 'AdminGroup', {
+    const adminGroup = new cognito.CfnUserPoolGroup(this, "AdminGroup", {
       userPoolId: userPool.userPoolId,
-      groupName: 'admin',
-      description: 'Attendance administrators',
+      groupName: "admin",
+      description: "Attendance administrators",
     });
     adminGroup.node.addDependency(userPool);
 
@@ -141,24 +148,65 @@ export class AttendanceStack extends cdk.Stack {
       EMPLOYEE_PHOTOS_BUCKET: employeePhotosBucket.bucketName,
       REPORTS_BUCKET: reportsBucket.bucketName,
       REKOGNITION_COLLECTION_ID: `${appName}-faces`,
-      TZ: 'Asia/Kolkata',
-      MATCH_THRESHOLD: '90',
+      TZ: "Asia/Kolkata",
+      MATCH_THRESHOLD: "90",
     };
 
     const nodeRuntime = lambda.Runtime.NODEJS_20_X;
 
-    const presignFn = this.createFn('PresignFn', 'services/presign-upload-url', baseEnv, nodeRuntime);
-    const getResultFn = this.createFn('GetResultFn', 'services/get-upload-result', baseEnv, nodeRuntime);
-    const registerFn = this.createFn('RegisterEmployeeFn', 'services/register-employee', baseEnv, nodeRuntime);
-    const recognizeFn = this.createFn('RecognizeAttendanceFn', 'services/recognize-attendance', baseEnv, nodeRuntime, recognitionDlq);
-    const adminQueryFn = this.createFn('AdminQueryAttendanceFn', 'services/admin-query-attendance', baseEnv, nodeRuntime);
-    const dailyCloseoutFn = this.createFn('DailyCloseoutFn', 'services/daily-closeout', baseEnv, nodeRuntime);
-    const weeklyAnalyticsFn = this.createFn('WeeklyAnalyticsFn', 'services/weekly-analytics', baseEnv, nodeRuntime);
-    const rawCleanupFn = this.createFn('RawObjectCleanupFn', 'services/raw-object-cleanup', baseEnv, nodeRuntime);
+    const presignFn = this.createFn(
+      "PresignFn",
+      "services/presign-upload-url",
+      baseEnv,
+      nodeRuntime,
+    );
+    const getResultFn = this.createFn(
+      "GetResultFn",
+      "services/get-upload-result",
+      baseEnv,
+      nodeRuntime,
+    );
+    const registerFn = this.createFn(
+      "RegisterEmployeeFn",
+      "services/register-employee",
+      baseEnv,
+      nodeRuntime,
+    );
+    const recognizeFn = this.createFn(
+      "RecognizeAttendanceFn",
+      "services/recognize-attendance",
+      baseEnv,
+      nodeRuntime,
+      recognitionDlq,
+    );
+    const adminQueryFn = this.createFn(
+      "AdminQueryAttendanceFn",
+      "services/admin-query-attendance",
+      baseEnv,
+      nodeRuntime,
+    );
+    const dailyCloseoutFn = this.createFn(
+      "DailyCloseoutFn",
+      "services/daily-closeout",
+      baseEnv,
+      nodeRuntime,
+    );
+    const weeklyAnalyticsFn = this.createFn(
+      "WeeklyAnalyticsFn",
+      "services/weekly-analytics",
+      baseEnv,
+      nodeRuntime,
+    );
+    const rawCleanupFn = this.createFn(
+      "RawObjectCleanupFn",
+      "services/raw-object-cleanup",
+      baseEnv,
+      nodeRuntime,
+    );
 
-    rawUploadBucket.grantPut(presignFn, 'raw/*');
-    rawUploadBucket.grantRead(recognizeFn, 'raw/*');
-    rawUploadBucket.grantReadWrite(rawCleanupFn, 'raw/*');
+    rawUploadBucket.grantPut(presignFn, "raw/*");
+    rawUploadBucket.grantRead(recognizeFn, "raw/*");
+    rawUploadBucket.grantReadWrite(rawCleanupFn, "raw/*");
     employeePhotosBucket.grantRead(registerFn);
     reportsBucket.grantReadWrite(dailyCloseoutFn);
     reportsBucket.grantReadWrite(weeklyAnalyticsFn);
@@ -175,9 +223,17 @@ export class AttendanceStack extends cdk.Stack {
     uploadResultsTable.grantReadData(getResultFn);
     uploadResultsTable.grantReadWriteData(recognizeFn);
 
-    const rekognitionActions = ['rekognition:SearchFacesByImage', 'rekognition:IndexFaces'];
+    const rekognitionActions = [
+      "rekognition:SearchFacesByImage",
+      "rekognition:IndexFaces",
+    ];
     [registerFn, recognizeFn].forEach((fn) => {
-      fn.addToRolePolicy(new iam.PolicyStatement({ actions: rekognitionActions, resources: ['*'] }));
+      fn.addToRolePolicy(
+        new iam.PolicyStatement({
+          actions: rekognitionActions,
+          resources: ["*"],
+        }),
+      );
     });
 
     dataKey.grantEncryptDecrypt(presignFn);
@@ -192,71 +248,121 @@ export class AttendanceStack extends cdk.Stack {
     rawUploadBucket.addEventNotification(
       s3.EventType.OBJECT_CREATED,
       new s3n.LambdaDestination(recognizeFn),
-      { prefix: 'raw/' },
+      { prefix: "raw/" },
     );
 
-    const httpApi = new apigwv2.HttpApi(this, 'HttpApi', {
+    const httpApi = new apigwv2.HttpApi(this, "HttpApi", {
       apiName: `${appName}-api`,
       corsPreflight: {
-        allowHeaders: ['authorization', 'content-type'],
+        allowHeaders: ["authorization", "content-type"],
         allowMethods: [
           apigwv2.CorsHttpMethod.GET,
           apigwv2.CorsHttpMethod.POST,
           apigwv2.CorsHttpMethod.OPTIONS,
         ],
-        allowOrigins: ['*'],
+        allowOrigins: ["*"],
       },
     });
 
-    const jwtAuthorizer = new authorizers.HttpJwtAuthorizer('JwtAuthorizer', `https://cognito-idp.${this.region}.amazonaws.com/${userPool.userPoolId}`, {
-      jwtAudience: [userPoolClient.userPoolClientId],
+    const jwtAuthorizer = new authorizers.HttpJwtAuthorizer(
+      "JwtAuthorizer",
+      `https://cognito-idp.${this.region}.amazonaws.com/${userPool.userPoolId}`,
+      {
+        jwtAudience: [userPoolClient.userPoolClientId],
+      },
+    );
+
+    httpApi.addRoutes({
+      path: "/upload-url",
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new integrations.HttpLambdaIntegration(
+        "PresignIntegration",
+        presignFn,
+      ),
+      authorizer: jwtAuthorizer,
+    });
+    httpApi.addRoutes({
+      path: "/result/{upload_id}",
+      methods: [apigwv2.HttpMethod.GET],
+      integration: new integrations.HttpLambdaIntegration(
+        "GetResultIntegration",
+        getResultFn,
+      ),
+      authorizer: jwtAuthorizer,
+    });
+    httpApi.addRoutes({
+      path: "/admin/register-employee",
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new integrations.HttpLambdaIntegration(
+        "RegisterIntegration",
+        registerFn,
+      ),
+      authorizer: jwtAuthorizer,
+    });
+    httpApi.addRoutes({
+      path: "/admin/attendance",
+      methods: [apigwv2.HttpMethod.GET],
+      integration: new integrations.HttpLambdaIntegration(
+        "AdminQueryIntegration",
+        adminQueryFn,
+      ),
+      authorizer: jwtAuthorizer,
     });
 
-    httpApi.addRoutes({ path: '/upload-url', methods: [apigwv2.HttpMethod.POST], integration: new integrations.HttpLambdaIntegration('PresignIntegration', presignFn), authorizer: jwtAuthorizer });
-    httpApi.addRoutes({ path: '/result/{upload_id}', methods: [apigwv2.HttpMethod.GET], integration: new integrations.HttpLambdaIntegration('GetResultIntegration', getResultFn), authorizer: jwtAuthorizer });
-    httpApi.addRoutes({ path: '/admin/register-employee', methods: [apigwv2.HttpMethod.POST], integration: new integrations.HttpLambdaIntegration('RegisterIntegration', registerFn), authorizer: jwtAuthorizer });
-    httpApi.addRoutes({ path: '/admin/attendance', methods: [apigwv2.HttpMethod.GET], integration: new integrations.HttpLambdaIntegration('AdminQueryIntegration', adminQueryFn), authorizer: jwtAuthorizer });
-
-    new events.Rule(this, 'DailyCloseoutRule', {
+    new events.Rule(this, "DailyCloseoutRule", {
       // 23:59 IST = 18:29 UTC
-      schedule: events.Schedule.cron({ minute: '29', hour: '18' }),
+      schedule: events.Schedule.cron({ minute: "29", hour: "18" }),
       targets: [new targets.LambdaFunction(dailyCloseoutFn)],
     });
 
-    new events.Rule(this, 'WeeklyAnalyticsRule', {
+    new events.Rule(this, "WeeklyAnalyticsRule", {
       // Monday 00:01 IST = Sunday 18:31 UTC
-      schedule: events.Schedule.cron({ minute: '31', hour: '18', weekDay: 'SUN' }),
+      schedule: events.Schedule.cron({
+        minute: "31",
+        hour: "18",
+        weekDay: "SUN",
+      }),
       targets: [new targets.LambdaFunction(weeklyAnalyticsFn)],
     });
 
-    new events.Rule(this, 'RawCleanupRule', {
+    new events.Rule(this, "RawCleanupRule", {
       schedule: events.Schedule.rate(cdk.Duration.minutes(15)),
       targets: [new targets.LambdaFunction(rawCleanupFn)],
     });
 
-    const distribution = new cloudfront.Distribution(this, 'WebDistribution', {
+    const distribution = new cloudfront.Distribution(this, "WebDistribution", {
       defaultBehavior: {
         origin: origins.S3BucketOrigin.withOriginAccessControl(webBucket),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
       },
-      defaultRootObject: 'index.html',
+      defaultRootObject: "index.html",
       errorResponses: [
-        { httpStatus: 403, responseHttpStatus: 200, responsePagePath: '/index.html' },
+        {
+          httpStatus: 403,
+          responseHttpStatus: 200,
+          responsePagePath: "/index.html",
+        },
       ],
     });
 
-    new s3deploy.BucketDeployment(this, 'DeployWeb', {
+    new s3deploy.BucketDeployment(this, "DeployWeb", {
       destinationBucket: webBucket,
-      sources: [s3deploy.Source.asset(path.join(__dirname, '..', 'web'))],
+      sources: [s3deploy.Source.asset(path.join(__dirname, "..", "web"))],
       distribution,
-      distributionPaths: ['/*'],
+      distributionPaths: ["/*"],
     });
 
-    new cdk.CfnOutput(this, 'ApiBaseUrl', { value: httpApi.apiEndpoint });
-    new cdk.CfnOutput(this, 'WebUrl', { value: `https://${distribution.distributionDomainName}` });
-    new cdk.CfnOutput(this, 'UserPoolId', { value: userPool.userPoolId });
-    new cdk.CfnOutput(this, 'UserPoolClientId', { value: userPoolClient.userPoolClientId });
-    new cdk.CfnOutput(this, 'RekognitionCollectionId', { value: `${appName}-faces` });
+    new cdk.CfnOutput(this, "ApiBaseUrl", { value: httpApi.apiEndpoint });
+    new cdk.CfnOutput(this, "WebUrl", {
+      value: `https://${distribution.distributionDomainName}`,
+    });
+    new cdk.CfnOutput(this, "UserPoolId", { value: userPool.userPoolId });
+    new cdk.CfnOutput(this, "UserPoolClientId", {
+      value: userPoolClient.userPoolClientId,
+    });
+    new cdk.CfnOutput(this, "RekognitionCollectionId", {
+      value: `${appName}-faces`,
+    });
   }
 
   private createFn(
@@ -268,8 +374,8 @@ export class AttendanceStack extends cdk.Stack {
   ): lambda.Function {
     return new lambda.Function(this, id, {
       runtime,
-      handler: 'index.handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '..', codePath)),
+      handler: "index.handler",
+      code: lambda.Code.fromAsset(path.join(__dirname, "..", codePath)),
       timeout: cdk.Duration.seconds(30),
       memorySize: 512,
       environment,

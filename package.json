@@ -10,13 +10,13 @@
     "cdk:deploy:prod": "cdk deploy AttendanceStack-prod"
   },
   "devDependencies": {
-    "@types/node": "^20.14.12",
+    "@types/node": "^20.19.39",
     "aws-cdk": "^2.154.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5.5.4"
+    "typescript": "^5.9.3"
   },
   "dependencies": {
-    "aws-cdk-lib": "^2.154.1",
-    "constructs": "^10.3.0"
+    "aws-cdk-lib": "^2.248.0",
+    "constructs": "^10.6.0"
   }
 }

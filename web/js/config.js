@@ -1,4 +1,4 @@
 window.APP_CONFIG = {
-  API_BASE_URL: 'REPLACE_WITH_HTTP_API_BASE_URL',
-  ID_TOKEN: 'REPLACE_WITH_COGNITO_ID_TOKEN'
+  API_BASE_URL: "https://uoby13l0lf.execute-api.ap-south-1.amazonaws.com",
+  CLIENT_ID: "2ignplhf21mroajlqlh18lglob",
 };
