@@ -1,16 +1,17 @@
-const AWS = require('aws-sdk');
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, GetCommand } = require('@aws-sdk/lib-dynamodb');
 const { json, badRequest } = require('../common/http');
 
-const ddb = new AWS.DynamoDB.DocumentClient();
+const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 exports.handler = async (event) => {
   const uploadId = event?.pathParameters?.upload_id;
   if (!uploadId) return badRequest('upload_id is required');
 
-  const result = await ddb.get({
+  const result = await ddb.send(new GetCommand({
     TableName: process.env.UPLOAD_RESULTS_TABLE,
     Key: { upload_id: uploadId },
-  }).promise();
+  }));
 
   if (!result.Item) return json(200, { state: 'PENDING', upload_id: uploadId });
   return json(200, result.Item);

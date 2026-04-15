@@ -1,9 +1,11 @@
-const AWS = require('aws-sdk');
+const { RekognitionClient, IndexFacesCommand } = require('@aws-sdk/client-rekognition');
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, UpdateCommand } = require('@aws-sdk/lib-dynamodb');
 const { json, badRequest, forbidden } = require('../common/http');
 const { hasAdminAccess } = require('../common/auth');
 
-const rekognition = new AWS.Rekognition();
-const ddb = new AWS.DynamoDB.DocumentClient();
+const rekognition = new RekognitionClient({});
+const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 exports.handler = async (event) => {
   if (!hasAdminAccess(event)) return forbidden('Admin group required');
@@ -17,21 +19,22 @@ exports.handler = async (event) => {
 
   if (!employeeId || !s3Key || !name) return badRequest('employee_id, name and s3_key are required');
 
-  const indexResp = await rekognition.indexFaces({
+  const indexResp = await rekognition.send(new IndexFacesCommand({
     CollectionId: process.env.REKOGNITION_COLLECTION_ID,
     Image: { S3Object: { Bucket: process.env.EMPLOYEE_PHOTOS_BUCKET, Name: s3Key } },
     ExternalImageId: employeeId,
     MaxFaces: 1,
     QualityFilter: 'HIGH',
     DetectionAttributes: ['DEFAULT'],
-  }).promise();
+  }));
 
   if (!indexResp.FaceRecords || indexResp.FaceRecords.length !== 1) {
     return badRequest('Photo must contain exactly one clear face');
   }
 
   const faceId = indexResp.FaceRecords[0].Face.FaceId;
-  await ddb.update({
+
+  await ddb.send(new UpdateCommand({
     TableName: process.env.EMPLOYEES_TABLE,
     Key: { employee_id: employeeId },
     UpdateExpression: 'SET #n=:n, department=:d, shift_start_local=:s, face_id=:f, is_active=:a',
@@ -43,7 +46,7 @@ exports.handler = async (event) => {
       ':f': faceId,
       ':a': true,
     },
-  }).promise();
+  }));
 
   return json(200, { employee_id: employeeId, face_id: faceId, collection_id: process.env.REKOGNITION_COLLECTION_ID });
 };

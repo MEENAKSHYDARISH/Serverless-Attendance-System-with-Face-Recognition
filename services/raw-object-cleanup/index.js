@@ -1,5 +1,6 @@
-const AWS = require('aws-sdk');
-const s3 = new AWS.S3();
+const { S3Client, ListObjectsV2Command, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+
+const s3 = new S3Client({});
 
 exports.handler = async () => {
   const threshold = Date.now() - (60 * 60 * 1000);
@@ -7,16 +8,19 @@ exports.handler = async () => {
   let deleted = 0;
 
   do {
-    const page = await s3.listObjectsV2({
+    const page = await s3.send(new ListObjectsV2Command({
       Bucket: process.env.RAW_UPLOAD_BUCKET,
       Prefix: 'raw/',
       ContinuationToken: continuationToken,
-    }).promise();
+    }));
 
     for (const obj of page.Contents || []) {
       const lastModified = new Date(obj.LastModified).getTime();
       if (lastModified < threshold) {
-        await s3.deleteObject({ Bucket: process.env.RAW_UPLOAD_BUCKET, Key: obj.Key }).promise();
+        await s3.send(new DeleteObjectCommand({
+          Bucket: process.env.RAW_UPLOAD_BUCKET,
+          Key: obj.Key,
+        }));
         deleted += 1;
       }
     }

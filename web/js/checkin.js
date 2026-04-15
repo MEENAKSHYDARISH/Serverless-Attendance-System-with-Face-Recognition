@@ -36,7 +36,11 @@ async function getUploadUrl() {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+<<<<<<< HEAD
       Authorization: `Bearer ${token}`, // ✅ FIXED
+=======
+      Authorization: `Bearer ${localStorage.getItem("idToken")}`,
+>>>>>>> e1c363612f5678de1cd1a5fe3d3b8747c350b72a
     },
   });
 
@@ -69,7 +73,11 @@ async function pollResult(uploadId) {
       `${window.APP_CONFIG.API_BASE_URL}/result/${uploadId}`,
       {
         headers: {
+<<<<<<< HEAD
           Authorization: `Bearer ${token}`, // ✅ FIXED
+=======
+          Authorization: `Bearer ${localStorage.getItem("idToken")}`,
+>>>>>>> e1c363612f5678de1cd1a5fe3d3b8747c350b72a
         },
       },
     );

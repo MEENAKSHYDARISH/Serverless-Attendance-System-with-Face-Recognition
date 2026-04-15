@@ -1,8 +1,10 @@
-const AWS = require('aws-sdk');
+const { RekognitionClient, SearchFacesByImageCommand } = require('@aws-sdk/client-rekognition');
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, PutCommand, GetCommand, UpdateCommand } = require('@aws-sdk/lib-dynamodb');
 const { localDateParts, toEpochSecondsPlus } = require('../common/time');
 
-const rekognition = new AWS.Rekognition();
-const ddb = new AWS.DynamoDB.DocumentClient();
+const rekognition = new RekognitionClient({});
+const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 function buildStatus(clockInTime, shiftStart) {
   if (!clockInTime || !shiftStart) return 'PRESENT';
@@ -10,10 +12,10 @@ function buildStatus(clockInTime, shiftStart) {
 }
 
 async function putResult(uploadId, payload) {
-  await ddb.put({
+  await ddb.send(new PutCommand({
     TableName: process.env.UPLOAD_RESULTS_TABLE,
     Item: { upload_id: uploadId, ...payload, expires_at: toEpochSecondsPlus(24) },
-  }).promise();
+  }));
 }
 
 exports.handler = async (event) => {
@@ -23,12 +25,12 @@ exports.handler = async (event) => {
     const uploadId = key.split('/').pop()?.replace('.jpg', '') || `unknown-${Date.now()}`;
 
     try {
-      const search = await rekognition.searchFacesByImage({
+      const search = await rekognition.send(new SearchFacesByImageCommand({
         CollectionId: process.env.REKOGNITION_COLLECTION_ID,
         Image: { S3Object: { Bucket: bucket, Name: key } },
         FaceMatchThreshold: Number(process.env.MATCH_THRESHOLD || '90'),
         MaxFaces: 1,
-      }).promise();
+      }));
 
       const topMatch = search.FaceMatches?.[0];
       if (!topMatch || Number(topMatch.Similarity || 0) < Number(process.env.MATCH_THRESHOLD || '90')) {
@@ -45,50 +47,61 @@ exports.handler = async (event) => {
 
       const { date, time, iso } = localDateParts(process.env.TZ || 'Asia/Kolkata');
 
-      const employeeResp = await ddb.get({ TableName: process.env.EMPLOYEES_TABLE, Key: { employee_id: employeeId } }).promise();
+      const employeeResp = await ddb.send(new GetCommand({
+        TableName: process.env.EMPLOYEES_TABLE,
+        Key: { employee_id: employeeId },
+      }));
       const employee = employeeResp.Item;
       if (!employee || employee.is_active === false) {
         await putResult(uploadId, { state: 'COMPLETED', employee_id: employeeId, action: 'none', status: 'INACTIVE', message: 'Employee is inactive or not found', processed_at: iso });
         continue;
       }
 
-      const attendanceResp = await ddb.get({ TableName: process.env.ATTENDANCE_TABLE, Key: { employee_id: employeeId, date } }).promise();
+      const attendanceResp = await ddb.send(new GetCommand({
+        TableName: process.env.ATTENDANCE_TABLE,
+        Key: { employee_id: employeeId, date },
+      }));
       const existing = attendanceResp.Item;
 
       if (!existing) {
         const status = buildStatus(time, employee.shift_start_local);
-        await ddb.put({
-          TableName: process.env.ATTENDANCE_TABLE,
-          Item: {
-            employee_id: employeeId,
-            date,
-            clock_in_ts: iso,
-            status,
-            confidence: Number(confidence),
-            source_upload_id: uploadId,
-            employee_name: employee.name,
-          },
-          ConditionExpression: 'attribute_not_exists(employee_id) AND attribute_not_exists(#d)',
-          ExpressionAttributeNames: { '#d': 'date' },
-        }).promise();
+        try {
+          await ddb.send(new PutCommand({
+            TableName: process.env.ATTENDANCE_TABLE,
+            Item: {
+              employee_id: employeeId,
+              date,
+              clock_in_ts: iso,
+              status,
+              confidence: Number(confidence),
+              source_upload_id: uploadId,
+              employee_name: employee.name,
+            },
+            ConditionExpression: 'attribute_not_exists(employee_id) AND attribute_not_exists(#d)',
+            ExpressionAttributeNames: { '#d': 'date' },
+          }));
+        } catch (err) {
+          if (err.name !== 'ConditionalCheckFailedException') throw err;
+        }
 
         await putResult(uploadId, { state: 'COMPLETED', employee_id: employeeId, name: employee.name, action: 'CLOCK_IN', status, matched_confidence: Number(confidence), processed_at: iso });
         continue;
       }
 
       if (!existing.clock_out_ts) {
-        await ddb.update({
+        await ddb.send(new UpdateCommand({
           TableName: process.env.ATTENDANCE_TABLE,
           Key: { employee_id: employeeId, date },
-          UpdateExpression: 'SET clock_out_ts=:co',
+          UpdateExpression: 'SET clock_out_ts = :co',
           ExpressionAttributeValues: { ':co': iso },
-        }).promise();
+        }));
 
         await putResult(uploadId, { state: 'COMPLETED', employee_id: employeeId, name: employee.name, action: 'CLOCK_OUT', status: existing.status, matched_confidence: Number(confidence), processed_at: iso });
         continue;
       }
 
       await putResult(uploadId, { state: 'COMPLETED', employee_id: employeeId, name: employee.name, action: 'ALREADY_COMPLETE', status: existing.status, matched_confidence: Number(confidence), processed_at: iso });
+
     } catch (error) {
       await putResult(uploadId, { state: 'FAILED', action: 'none', status: 'ERROR', message: error.message, processed_at: new Date().toISOString() });
       throw error;

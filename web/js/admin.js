@@ -57,7 +57,11 @@ async function loadRecords() {
     `${window.APP_CONFIG.API_BASE_URL}/attendance?${query}`,
     {
       headers: {
+<<<<<<< HEAD
         Authorization: `Bearer ${token.trim()}`,
+=======
+        Authorization: `Bearer ${localStorage.getItem("idToken")}`,
+>>>>>>> e1c363612f5678de1cd1a5fe3d3b8747c350b72a
       },
     },
   );
