@@ -374,8 +374,19 @@ export class AttendanceStack extends cdk.Stack {
   ): lambda.Function {
     return new lambda.Function(this, id, {
       runtime,
-      handler: "index.handler",
-      code: lambda.Code.fromAsset(path.join(__dirname, "..", codePath)),
+      handler: `${codePath}/index.handler`,
+      code: lambda.Code.fromAsset(path.join(__dirname, ".."), {
+        exclude: [
+          "*",
+          "!services/",
+          `!${codePath}/`,
+          `!${codePath}/**`,
+          "!services/common/",
+          "!services/common/**",
+          "!node_modules/",
+          "!node_modules/**",
+        ],
+      }),
       timeout: cdk.Duration.seconds(30),
       memorySize: 512,
       environment,
