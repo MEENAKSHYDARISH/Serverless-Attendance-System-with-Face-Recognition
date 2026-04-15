@@ -14,6 +14,20 @@
       <h1>Attendance Admin</h1>
 
       <section class="card">
+        <h2>Register Employee</h2>
+        <div class="grid">
+          <input id="regEmployeeId" placeholder="Employee ID (e.g., EMP001)" />
+          <input id="regName" placeholder="Full Name" />
+          <input id="regDepartment" placeholder="Department" value="General" />
+          <input id="regShiftStart" placeholder="Shift Start (HH:MM:SS)" value="09:00:00" />
+          <input id="regPhoto" type="file" accept="image/*" />
+          <button id="registerBtn">Register Employee</button>
+        </div>
+        <div id="registerStatus"></div>
+      </section>
+
+      <section class="card">
+        <h2>Attendance Records</h2>
         <div class="grid">
           <input id="employeeId" placeholder="employee_id" />
           <input id="dateFrom" type="date" />

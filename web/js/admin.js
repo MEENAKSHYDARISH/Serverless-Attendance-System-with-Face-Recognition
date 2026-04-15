@@ -5,6 +5,107 @@ if (!token || isTokenExpired(token)) {
 }
 setInterval(refreshToken, 50 * 60 * 1000);
 
+// Employee Registration Functions
+async function getEmployeePhotoUploadUrl(employeeId, fileName) {
+  const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/upload-url`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || "Failed to get upload URL");
+  }
+
+  // Modify the key for employee photos
+  const employeeKey = `employees/${employeeId}_${fileName}`;
+  const uploadUrl = data.uploadUrl.replace(data.s3Key, employeeKey);
+
+  return {
+    uploadUrl,
+    s3Key: employeeKey,
+    uploadId: data.uploadId,
+  };
+}
+
+async function uploadEmployeePhoto(uploadUrl, file) {
+  await fetch(uploadUrl, {
+    method: "PUT",
+    headers: {
+      "Content-Type": file.type,
+    },
+    body: file,
+  });
+}
+
+async function registerEmployee(employeeId, name, department, shiftStart, s3Key) {
+  const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/admin/register-employee`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      employee_id: employeeId,
+      name: name,
+      department: department,
+      shift_start_local: shiftStart,
+      s3_key: s3Key,
+    }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || "Failed to register employee");
+  }
+
+  return data;
+}
+
+async function handleEmployeeRegistration() {
+  const employeeId = document.getElementById("regEmployeeId").value.trim();
+  const name = document.getElementById("regName").value.trim();
+  const department = document.getElementById("regDepartment").value.trim();
+  const shiftStart = document.getElementById("regShiftStart").value.trim();
+  const photoFile = document.getElementById("regPhoto").files[0];
+
+  if (!employeeId || !name || !photoFile) {
+    alert("Please fill in all required fields and select a photo");
+    return;
+  }
+
+  const statusDiv = document.getElementById("registerStatus");
+  statusDiv.textContent = "Uploading photo...";
+
+  try {
+    // Get upload URL
+    const uploadData = await getEmployeePhotoUploadUrl(employeeId, photoFile.name);
+    
+    // Upload photo
+    await uploadEmployeePhoto(uploadData.uploadUrl, photoFile);
+    statusDiv.textContent = "Photo uploaded. Registering employee...";
+    
+    // Register employee
+    await registerEmployee(employeeId, name, department, shiftStart, uploadData.s3Key);
+    
+    statusDiv.textContent = `✅ Employee ${employeeId} registered successfully!`;
+    
+    // Clear form
+    document.getElementById("regEmployeeId").value = "";
+    document.getElementById("regName").value = "";
+    document.getElementById("regPhoto").value = "";
+    
+  } catch (error) {
+    statusDiv.textContent = `❌ Error: ${error.message}`;
+    console.error(error);
+  }
+}
+
+document.getElementById("registerBtn").addEventListener("click", handleEmployeeRegistration);
+
 function buildQuery(params) {
   const query = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
@@ -57,11 +158,7 @@ async function loadRecords() {
     `${window.APP_CONFIG.API_BASE_URL}/attendance?${query}`,
     {
       headers: {
-<<<<<<< HEAD
-        Authorization: `Bearer ${token.trim()}`,
-=======
-        Authorization: `Bearer ${localStorage.getItem("idToken")}`,
->>>>>>> e1c363612f5678de1cd1a5fe3d3b8747c350b72a
+        Authorization: `Bearer ${token}`,
       },
     },
   );
