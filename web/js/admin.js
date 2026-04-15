@@ -1,4 +1,4 @@
-const token = localStorage.getItem("accessToken");
+const token = localStorage.getItem("idToken");
 
 if (!token || isTokenExpired(token)) {
   logout();
