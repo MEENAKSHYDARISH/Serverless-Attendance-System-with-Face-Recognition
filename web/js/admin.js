@@ -20,13 +20,10 @@ async function getEmployeePhotoUploadUrl(employeeId, fileName) {
     throw new Error(data.message || "Failed to get upload URL");
   }
 
-  // Modify the key for employee photos
-  const employeeKey = `employees/${employeeId}_${fileName}`;
-  const uploadUrl = data.uploadUrl.replace(data.s3Key, employeeKey);
-
+  // Use the raw upload key - register-employee will copy to employee-photos bucket
   return {
-    uploadUrl,
-    s3Key: employeeKey,
+    uploadUrl: data.uploadUrl,
+    s3Key: data.s3Key,
     uploadId: data.uploadId,
   };
 }
