@@ -25,7 +25,7 @@ async function getUploadUrl() {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+      Authorization: `Bearer ${localStorage.getItem("idToken")}`,
     },
     body: JSON.stringify({}),
   });
@@ -52,7 +52,7 @@ async function pollResult(uploadId) {
       `${window.APP_CONFIG.API_BASE_URL}/result/${uploadId}`,
       {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`, // ✅ ADD
+          Authorization: `Bearer ${localStorage.getItem("idToken")}`,
         },
       },
     );
