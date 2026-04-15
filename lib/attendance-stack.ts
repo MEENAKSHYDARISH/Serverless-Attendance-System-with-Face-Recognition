@@ -42,6 +42,13 @@ export class AttendanceStack extends cdk.Stack {
       encryptionKey: dataKey,
       enforceSSL: true,
       eventBridgeEnabled: false,
+      cors: [
+        {
+          allowedMethods: [s3.HttpMethods.PUT],
+          allowedOrigins: ["*"],
+          allowedHeaders: ["*"],
+        },
+      ],
     });
 
     const employeePhotosBucket = new s3.Bucket(this, "EmployeePhotosBucket", {
