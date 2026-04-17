@@ -214,8 +214,9 @@ export class AttendanceStack extends cdk.Stack {
 
     rawUploadBucket.grantPut(presignFn, "raw/*");
     rawUploadBucket.grantRead(recognizeFn, "raw/*");
+    rawUploadBucket.grantRead(registerFn, "raw/*");
     rawUploadBucket.grantReadWrite(rawCleanupFn, "raw/*");
-    employeePhotosBucket.grantRead(registerFn);
+    employeePhotosBucket.grantReadWrite(registerFn);
     reportsBucket.grantReadWrite(dailyCloseoutFn);
     reportsBucket.grantReadWrite(weeklyAnalyticsFn);
 

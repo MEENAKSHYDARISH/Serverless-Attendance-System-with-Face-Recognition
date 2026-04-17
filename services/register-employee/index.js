@@ -2,7 +2,7 @@ const { RekognitionClient, IndexFacesCommand } = require('@aws-sdk/client-rekogn
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, UpdateCommand } = require('@aws-sdk/lib-dynamodb');
 const { S3Client, CopyObjectCommand } = require('@aws-sdk/client-s3');
-const { CognitoIdentityProviderClient } = require('@aws-sdk/client-cognito-identity-provider');
+const { CognitoIdentityProviderClient, AdminCreateUserCommand, AdminSetUserPasswordCommand, AdminAddUserToGroupCommand } = require('@aws-sdk/client-cognito-identity-provider');
 const { json, badRequest, forbidden } = require('../common/http');
 const { hasAdminAccess } = require('../common/auth');
 
@@ -30,7 +30,7 @@ exports.handler = async (event) => {
 
     // Create Cognito user account
     try {
-      await cognito.adminCreateUser({
+      await cognito.send(new AdminCreateUserCommand({
         UserPoolId: process.env.USER_POOL_ID,
         Username: email,
         MessageAction: 'SUPPRESS',
@@ -41,22 +41,22 @@ exports.handler = async (event) => {
           { Name: 'given_name', Value: name.split(' ')[0] },
           { Name: 'family_name', Value: name.split(' ').slice(1).join(' ') || 'Employee' },
         ],
-      });
+      }));
 
       // Set permanent password
-      await cognito.adminSetUserPassword({
+      await cognito.send(new AdminSetUserPasswordCommand({
         UserPoolId: process.env.USER_POOL_ID,
         Username: email,
         Password: password,
         Permanent: true,
-      });
+      }));
 
       // Add user to employee group
-      await cognito.adminAddUserToGroup({
+      await cognito.send(new AdminAddUserToGroupCommand({
         UserPoolId: process.env.USER_POOL_ID,
         Username: email,
         GroupName: 'employee',
-      });
+      }));
     } catch (err) {
       console.error('Cognito user create error:', err);
       if (err.__type === 'UsernameExistsException' || err.message?.includes('An account with the given email already exists')) {
