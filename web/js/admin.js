@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 function parseJwt(token) {
   if (!token) return null;
   try {
@@ -28,12 +29,17 @@ if (token) {
     console.warn("Failed to decode admin token", err);
   }
 }
+=======
+const token = localStorage.getItem("idToken");
+>>>>>>> dddbd99 (Admin dashboard fully working)
 
 if (!token || isTokenExpired(token)) {
   logout();
 }
+
 setInterval(refreshToken, 50 * 60 * 1000);
 
+<<<<<<< HEAD
 // Employee Registration Functions
 async function getEmployeePhotoUploadUrl(employeeId, fileName) {
   const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/upload-url`, {
@@ -139,6 +145,94 @@ async function handleEmployeeRegistration() {
 
 document.getElementById("registerBtn").addEventListener("click", handleEmployeeRegistration);
 
+=======
+// ================================
+// 🧾 REGISTER EMPLOYEE
+// ================================
+async function registerEmployee() {
+  const employee_id = document.getElementById("regEmployeeId").value;
+  const name = document.getElementById("regName").value;
+  const department = document.getElementById("regDepartment").value;
+  const shift = document.getElementById("regShift").value || "09:00:00";
+  const file = document.getElementById("photoInput").files[0];
+
+  if (!employee_id || !name || !file) {
+    alert("Employee ID, Name and Photo are required");
+    return;
+  }
+
+  try {
+    // 🪄 Step 1: Upload image to S3 (reuse presign API)
+    const uploadRes = await fetch(
+      `${window.APP_CONFIG.API_BASE_URL}/upload-url`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    const uploadData = await uploadRes.json();
+
+    console.log("UPLOAD RESPONSE:", uploadData);
+    console.log("SENDING s3_key:", uploadData.s3_key);
+
+    if (!uploadData.upload_url || !uploadData.s3_key) {
+      alert("Upload URL failed");
+      return;
+    }
+
+    await fetch(uploadData.upload_url, {
+      method: "PUT",
+      body: file,
+      headers: {
+        "Content-Type": "image/jpeg",
+      },
+    });
+
+    // 🧠 Step 2: Register in Rekognition + DynamoDB
+    const res = await fetch(
+      `${window.APP_CONFIG.API_BASE_URL}/admin/register-employee`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          employee_id,
+          name,
+          department,
+          shift_start_local: shift,
+          s3_key: uploadData.s3_key, // VERY IMPORTANT
+        }),
+      },
+    );
+
+    const data = await res.json();
+    if (res.ok) {
+      document.getElementById("registerStatus").innerText =
+        "✅ Employee registered successfully";
+    } else {
+      console.error("REGISTER ERROR:", data);
+      document.getElementById("registerStatus").innerText =
+        "❌ " + (data.message || "Registration failed");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Registration error");
+  }
+}
+
+document
+  .getElementById("registerBtn")
+  .addEventListener("click", registerEmployee);
+
+// ================================
+// 📊 ATTENDANCE (existing code)
+// ================================
+>>>>>>> dddbd99 (Admin dashboard fully working)
 function buildQuery(params) {
   const query = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
@@ -150,6 +244,7 @@ function buildQuery(params) {
 function renderTable(items) {
   const tbody = document.querySelector("#table tbody");
   tbody.innerHTML = "";
+
   items.forEach((item) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -171,6 +266,7 @@ function renderSummary(items) {
     late: items.filter((x) => x.status === "LATE").length,
     absent: items.filter((x) => x.status === "ABSENT").length,
   };
+
   document.getElementById("summary").textContent =
     `Total: ${summary.total} | Present: ${summary.present} | Late: ${summary.late} | Absent: ${summary.absent}`;
 }
@@ -187,17 +283,24 @@ async function loadRecords() {
     date_to: dateTo,
     status,
   });
+  console.log("DATE FROM:", dateFrom);
+  console.log("DATE TO:", dateTo);
   const res = await fetch(
-    `${window.APP_CONFIG.API_BASE_URL}/attendance?${query}`,
+    `${window.APP_CONFIG.API_BASE_URL}/admin/attendance?${query}`,
     {
       headers: {
+<<<<<<< HEAD
         Authorization: `Bearer ${getAuthToken()}`,
+=======
+        Authorization: `Bearer ${token}`,
+>>>>>>> dddbd99 (Admin dashboard fully working)
       },
     },
   );
 
   const data = await res.json();
   const items = data.items || [];
+
   renderTable(items);
   renderSummary(items);
 }

@@ -5,7 +5,7 @@ const resultBox = document.getElementById("resultBox");
 const token = localStorage.getItem("idToken");
 
 // 🔍 Debug
-console.log("TOKEN:", token);
+console.log("TOKEN EXISTS:", !!token);
 if (token) {
   const payload = JSON.parse(atob(token.split(".")[1]));
   console.log("TOKEN PAYLOAD:", payload);
@@ -36,7 +36,11 @@ async function getUploadUrl() {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+<<<<<<< HEAD
       Authorization: `Bearer ${token}`,
+=======
+      Authorization: `Bearer ${token}`, // ✅ FIXED
+>>>>>>> dddbd99 (Admin dashboard fully working)
     },
   });
 
@@ -69,7 +73,11 @@ async function pollResult(uploadId) {
       `${window.APP_CONFIG.API_BASE_URL}/result/${uploadId}`,
       {
         headers: {
+<<<<<<< HEAD
           Authorization: `Bearer ${token}`,
+=======
+          Authorization: `Bearer ${token}`, // ✅ FIXED
+>>>>>>> dddbd99 (Admin dashboard fully working)
         },
       }
     );

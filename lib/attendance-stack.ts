@@ -58,6 +58,19 @@ export class AttendanceStack extends cdk.Stack {
       encryption: s3.BucketEncryption.KMS,
       encryptionKey: dataKey,
       enforceSSL: true,
+
+      // 🔥 THIS IS THE FIX
+      cors: [
+        {
+          allowedMethods: [
+            s3.HttpMethods.PUT,
+            s3.HttpMethods.GET,
+            s3.HttpMethods.POST,
+          ],
+          allowedOrigins: ["*"], // later restrict to your CloudFront domain
+          allowedHeaders: ["*"],
+        },
+      ],
     });
 
     const reportsBucket = new s3.Bucket(this, "ReportsBucket", {
@@ -84,7 +97,9 @@ export class AttendanceStack extends cdk.Stack {
         type: dynamodb.AttributeType.STRING,
       },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      pointInTimeRecovery: true,
+      pointInTimeRecoverySpecification: {
+        pointInTimeRecoveryEnabled: true,
+      },
       encryption: dynamodb.TableEncryption.CUSTOMER_MANAGED,
       encryptionKey: dataKey,
       removalPolicy: cdk.RemovalPolicy.RETAIN,

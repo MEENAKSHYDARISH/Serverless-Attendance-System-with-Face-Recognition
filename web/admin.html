@@ -10,6 +10,22 @@
     <div style="display: flex; justify-content: flex-end">
       <button onclick="logout()">Logout</button>
     </div>
+    <section class="card">
+      <h2>Register Employee</h2>
+
+      <div class="grid">
+        <input id="regEmployeeId" placeholder="Employee ID" />
+        <input id="regName" placeholder="Name" />
+        <input id="regDepartment" placeholder="Department" />
+        <input id="regShift" placeholder="Shift Start (HH:MM:SS)" />
+
+        <input type="file" id="photoInput" accept="image/*" />
+
+        <button id="registerBtn">Register Employee</button>
+      </div>
+
+      <div id="registerStatus"></div>
+    </section>
     <main class="container">
       <h1>Attendance Admin</h1>
 
@@ -31,15 +47,25 @@
       <section class="card">
         <h2>Attendance Records</h2>
         <div class="grid">
-          <input id="employeeId" placeholder="employee_id" />
-          <input id="dateFrom" type="date" />
-          <input id="dateTo" type="date" />
+          <input id="employeeId" placeholder="employee_id (e.g. EMP002)" />
+
+          <div>
+            <label>From Date (YYYY-MM-DD)</label>
+            <input id="dateFrom" type="date" />
+          </div>
+
+          <div>
+            <label>To Date (YYYY-MM-DD)</label>
+            <input id="dateTo" type="date" />
+          </div>
+
           <select id="status">
             <option value="">All Status</option>
             <option value="PRESENT">PRESENT</option>
             <option value="LATE">LATE</option>
             <option value="ABSENT">ABSENT</option>
           </select>
+
           <button id="loadBtn">Load Records</button>
         </div>
         <div id="summary"></div>
