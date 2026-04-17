@@ -51,7 +51,7 @@ async function uploadEmployeePhoto(uploadUrl, file) {
   });
 }
 
-async function registerEmployee(employeeId, name, department, shiftStart, s3Key) {
+async function registerEmployee(employeeId, name, email, password, department, shiftStart, s3Key) {
   console.log(token,"hheheheheh")
   const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/admin/register-employee`, {
     method: "POST",
@@ -62,6 +62,8 @@ async function registerEmployee(employeeId, name, department, shiftStart, s3Key)
     body: JSON.stringify({
       employee_id: employeeId,
       name: name,
+      email: email,
+      password: password,
       department: department,
       shift_start_local: shiftStart,
       s3_key: s3Key,
@@ -79,12 +81,14 @@ async function registerEmployee(employeeId, name, department, shiftStart, s3Key)
 async function handleEmployeeRegistration() {
   const employeeId = document.getElementById("regEmployeeId").value.trim();
   const name = document.getElementById("regName").value.trim();
+  const email = document.getElementById("regEmail").value.trim();
+  const password = document.getElementById("regPassword").value.trim();
   const department = document.getElementById("regDepartment").value.trim();
   const shiftStart = document.getElementById("regShiftStart").value.trim();
   const photoFile = document.getElementById("regPhoto").files[0];
 
-  if (!employeeId || !name || !photoFile) {
-    alert("Please fill in all required fields and select a photo");
+  if (!employeeId || !name || !email || !password || !photoFile) {
+    alert("Please fill in all required fields (ID, Name, Email, Password) and select a photo");
     return;
   }
 
@@ -100,13 +104,15 @@ async function handleEmployeeRegistration() {
     statusDiv.textContent = "Photo uploaded. Registering employee...";
     
     // Register employee
-    await registerEmployee(employeeId, name, department, shiftStart, uploadData.s3Key);
+    await registerEmployee(employeeId, name, email, password, department, shiftStart, uploadData.s3Key);
     
     statusDiv.textContent = `✅ Employee ${employeeId} registered successfully!`;
     
     // Clear form
     document.getElementById("regEmployeeId").value = "";
     document.getElementById("regName").value = "";
+    document.getElementById("regEmail").value = "";
+    document.getElementById("regPassword").value = "";
     document.getElementById("regPhoto").value = "";
     
   } catch (error) {
