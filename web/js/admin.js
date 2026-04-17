@@ -1,5 +1,21 @@
+function parseJwt(token) {
+  if (!token) return null;
+  try {
+    return JSON.parse(atob(token.split(".")[1]));
+  } catch {
+    return null;
+  }
+}
+
 function getAuthToken() {
-  return localStorage.getItem("accessToken") || localStorage.getItem("idToken");
+  const accessToken = localStorage.getItem("accessToken");
+  const idToken = localStorage.getItem("idToken");
+  const accessGroups = parseJwt(accessToken)?.["cognito:groups"];
+  const idGroups = parseJwt(idToken)?.["cognito:groups"];
+
+  if (accessGroups && accessGroups.length) return accessToken;
+  if (idGroups && idGroups.length) return idToken;
+  return accessToken || idToken;
 }
 
 const token = getAuthToken();

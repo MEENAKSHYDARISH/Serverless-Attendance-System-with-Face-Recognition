@@ -30,9 +30,18 @@ async function login() {
       localStorage.setItem("refreshToken", RefreshToken);
       localStorage.setItem("accessToken", AccessToken);
 
-      const accessPayload = JSON.parse(atob(AccessToken.split(".")[1]));
-      const groups = accessPayload['cognito:groups'] || [];
-      const isAdmin = Array.isArray(groups) ? groups.includes('admin') : false;
+      const parseJwt = (token) => {
+        try {
+          return JSON.parse(atob(token.split(".")[1]));
+        } catch {
+          return {};
+        }
+      };
+
+      const accessPayload = parseJwt(AccessToken);
+      const idPayload = parseJwt(IdToken);
+      const groups = accessPayload['cognito:groups'] || idPayload['cognito:groups'] || [];
+      const isAdmin = Array.isArray(groups) ? groups.includes('admin') : String(groups).split(',').includes('admin');
 
       // Redirect based on role
       window.location.href = isAdmin ? "/admin.html" : "/index.html";
