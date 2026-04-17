@@ -1,8 +1,17 @@
 function getAuthToken() {
-  return localStorage.getItem("idToken") || localStorage.getItem("accessToken");
+  return localStorage.getItem("idToken")||localStorage.getItem("accessToken");
 }
 
 const token = getAuthToken();
+
+if (token) {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    console.log("ADMIN TOKEN PAYLOAD:", payload);
+  } catch (err) {
+    console.warn("Failed to decode admin token", err);
+  }
+}
 
 if (!token || isTokenExpired(token)) {
   logout();
@@ -43,6 +52,7 @@ async function uploadEmployeePhoto(uploadUrl, file) {
 }
 
 async function registerEmployee(employeeId, name, department, shiftStart, s3Key) {
+  console.log(token,"hheheheheh")
   const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/admin/register-employee`, {
     method: "POST",
     headers: {

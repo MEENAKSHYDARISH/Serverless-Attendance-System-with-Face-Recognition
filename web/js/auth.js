@@ -30,9 +30,8 @@ async function login() {
       localStorage.setItem("refreshToken", RefreshToken);
       localStorage.setItem("accessToken", AccessToken);
 
-      // Check if user is admin
-      const payload = JSON.parse(atob(IdToken.split(".")[1]));
-      const groups = payload['cognito:groups'] || [];
+      const accessPayload = JSON.parse(atob(AccessToken.split(".")[1]));
+      const groups = accessPayload['cognito:groups'] || [];
       const isAdmin = Array.isArray(groups) ? groups.includes('admin') : false;
 
       // Redirect based on role
