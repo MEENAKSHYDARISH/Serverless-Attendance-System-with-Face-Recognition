@@ -155,6 +155,7 @@ export class AttendanceStack extends cdk.Stack {
       EMPLOYEE_PHOTOS_BUCKET: employeePhotosBucket.bucketName,
       REPORTS_BUCKET: reportsBucket.bucketName,
       REKOGNITION_COLLECTION_ID: `${appName}-faces`,
+      USER_POOL_ID: userPool.userPoolId,
       TZ: "Asia/Kolkata",
       MATCH_THRESHOLD: "90",
     };
@@ -251,6 +252,18 @@ export class AttendanceStack extends cdk.Stack {
     dataKey.grantEncryptDecrypt(dailyCloseoutFn);
     dataKey.grantEncryptDecrypt(weeklyAnalyticsFn);
     dataKey.grantEncryptDecrypt(rawCleanupFn);
+
+    // Grant Cognito permissions to register-employee Lambda
+    registerFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: [
+          "cognito-idp:AdminCreateUser",
+          "cognito-idp:AdminSetUserPassword",
+          "cognito-idp:AdminAddUserToGroup",
+        ],
+        resources: [userPool.userPoolArn],
+      }),
+    );
 
     rawUploadBucket.addEventNotification(
       s3.EventType.OBJECT_CREATED,
