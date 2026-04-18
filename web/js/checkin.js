@@ -2,21 +2,6 @@ const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
 const resultBox = document.getElementById("resultBox");
 
-const token = localStorage.getItem("idToken");
-
-// 🔍 Debug
-console.log("TOKEN EXISTS:", !!token);
-if (token) {
-  const payload = JSON.parse(atob(token.split(".")[1]));
-  console.log("TOKEN PAYLOAD:", payload);
-}
-
-if (!token || isTokenExpired(token)) {
-  logout();
-}
-
-setInterval(refreshToken, 50 * 60 * 1000);
-
 // 🎥 Start camera
 async function startCamera() {
   try {
@@ -36,11 +21,6 @@ async function getUploadUrl() {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-<<<<<<< HEAD
-      Authorization: `Bearer ${token}`,
-=======
-      Authorization: `Bearer ${token}`, // ✅ FIXED
->>>>>>> dddbd99 (Admin dashboard fully working)
     },
   });
 
@@ -72,14 +52,8 @@ async function pollResult(uploadId) {
     const res = await fetch(
       `${window.APP_CONFIG.API_BASE_URL}/result/${uploadId}`,
       {
-        headers: {
-<<<<<<< HEAD
-          Authorization: `Bearer ${token}`,
-=======
-          Authorization: `Bearer ${token}`, // ✅ FIXED
->>>>>>> dddbd99 (Admin dashboard fully working)
-        },
-      }
+        headers: {},
+      },
     );
     const data = await res.json();
 

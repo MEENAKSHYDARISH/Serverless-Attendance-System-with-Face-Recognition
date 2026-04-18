@@ -1,37 +1,4 @@
-<<<<<<< HEAD
-function parseJwt(token) {
-  if (!token) return null;
-  try {
-    return JSON.parse(atob(token.split(".")[1]));
-  } catch {
-    return null;
-  }
-}
-
-function getAuthToken() {
-  const accessToken = localStorage.getItem("accessToken");
-  const idToken = localStorage.getItem("idToken");
-  const accessGroups = parseJwt(accessToken)?.["cognito:groups"];
-  const idGroups = parseJwt(idToken)?.["cognito:groups"];
-
-  if (accessGroups && accessGroups.length) return accessToken;
-  if (idGroups && idGroups.length) return idToken;
-  return accessToken || idToken;
-}
-
-const token = getAuthToken();
-
-if (token) {
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    console.log("ADMIN TOKEN PAYLOAD:", payload);
-  } catch (err) {
-    console.warn("Failed to decode admin token", err);
-  }
-}
-=======
 const token = localStorage.getItem("idToken");
->>>>>>> dddbd99 (Admin dashboard fully working)
 
 if (!token || isTokenExpired(token)) {
   logout();
@@ -39,113 +6,6 @@ if (!token || isTokenExpired(token)) {
 
 setInterval(refreshToken, 50 * 60 * 1000);
 
-<<<<<<< HEAD
-// Employee Registration Functions
-async function getEmployeePhotoUploadUrl(employeeId, fileName) {
-  const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/upload-url`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${getAuthToken()}`,
-    },
-  });
-
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.message || "Failed to get upload URL");
-  }
-
-  // Use the raw upload key - register-employee will copy to employee-photos bucket
-  return {
-    uploadUrl: data.uploadUrl,
-    s3Key: data.s3Key,
-    uploadId: data.uploadId,
-  };
-}
-
-async function uploadEmployeePhoto(uploadUrl, file) {
-  await fetch(uploadUrl, {
-    method: "PUT",
-    headers: {
-      "Content-Type": file.type,
-    },
-    body: file,
-  });
-}
-
-async function registerEmployee(employeeId, name, email, password, department, shiftStart, s3Key) {
-  console.log(token,"hheheheheh")
-  const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/admin/register-employee`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${getAuthToken()}`,
-    },
-    body: JSON.stringify({
-      employee_id: employeeId,
-      name: name,
-      email: email,
-      password: password,
-      department: department,
-      shift_start_local: shiftStart,
-      s3_key: s3Key,
-    }),
-  });
-
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.message || "Failed to register employee");
-  }
-
-  return data;
-}
-
-async function handleEmployeeRegistration() {
-  const employeeId = document.getElementById("regEmployeeId").value.trim();
-  const name = document.getElementById("regName").value.trim();
-  const email = document.getElementById("regEmail").value.trim();
-  const password = document.getElementById("regPassword").value.trim();
-  const department = document.getElementById("regDepartment").value.trim();
-  const shiftStart = document.getElementById("regShiftStart").value.trim();
-  const photoFile = document.getElementById("regPhoto").files[0];
-
-  if (!employeeId || !name || !email || !password || !photoFile) {
-    alert("Please fill in all required fields (ID, Name, Email, Password) and select a photo");
-    return;
-  }
-
-  const statusDiv = document.getElementById("registerStatus");
-  statusDiv.textContent = "Uploading photo...";
-
-  try {
-    // Get upload URL
-    const uploadData = await getEmployeePhotoUploadUrl(employeeId, photoFile.name);
-    
-    // Upload photo
-    await uploadEmployeePhoto(uploadData.uploadUrl, photoFile);
-    statusDiv.textContent = "Photo uploaded. Registering employee...";
-    
-    // Register employee
-    await registerEmployee(employeeId, name, email, password, department, shiftStart, uploadData.s3Key);
-    
-    statusDiv.textContent = `✅ Employee ${employeeId} registered successfully!`;
-    
-    // Clear form
-    document.getElementById("regEmployeeId").value = "";
-    document.getElementById("regName").value = "";
-    document.getElementById("regEmail").value = "";
-    document.getElementById("regPassword").value = "";
-    document.getElementById("regPhoto").value = "";
-    
-  } catch (error) {
-    statusDiv.textContent = `❌ Error: ${error.message}`;
-    console.error(error);
-  }
-}
-
-document.getElementById("registerBtn").addEventListener("click", handleEmployeeRegistration);
-
-=======
 // ================================
 // 🧾 REGISTER EMPLOYEE
 // ================================
@@ -176,14 +36,17 @@ async function registerEmployee() {
     const uploadData = await uploadRes.json();
 
     console.log("UPLOAD RESPONSE:", uploadData);
-    console.log("SENDING s3_key:", uploadData.s3_key);
+    console.log("SENDING s3Key:", uploadData.s3Key);
 
-    if (!uploadData.upload_url || !uploadData.s3_key) {
+    // ✅ FIXED KEYS
+    if (!uploadData.uploadUrl || !uploadData.s3Key) {
+      console.error("Missing fields:", uploadData);
       alert("Upload URL failed");
       return;
     }
 
-    await fetch(uploadData.upload_url, {
+    // upload image to S3
+    await fetch(uploadData.uploadUrl, {
       method: "PUT",
       body: file,
       headers: {
@@ -191,7 +54,7 @@ async function registerEmployee() {
       },
     });
 
-    // 🧠 Step 2: Register in Rekognition + DynamoDB
+    // send to backend
     const res = await fetch(
       `${window.APP_CONFIG.API_BASE_URL}/admin/register-employee`,
       {
@@ -205,7 +68,7 @@ async function registerEmployee() {
           name,
           department,
           shift_start_local: shift,
-          s3_key: uploadData.s3_key, // VERY IMPORTANT
+          s3_key: uploadData.s3Key, // ✅ correct
         }),
       },
     );
@@ -232,7 +95,6 @@ document
 // ================================
 // 📊 ATTENDANCE (existing code)
 // ================================
->>>>>>> dddbd99 (Admin dashboard fully working)
 function buildQuery(params) {
   const query = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
@@ -289,11 +151,7 @@ async function loadRecords() {
     `${window.APP_CONFIG.API_BASE_URL}/admin/attendance?${query}`,
     {
       headers: {
-<<<<<<< HEAD
-        Authorization: `Bearer ${getAuthToken()}`,
-=======
         Authorization: `Bearer ${token}`,
->>>>>>> dddbd99 (Admin dashboard fully working)
       },
     },
   );
