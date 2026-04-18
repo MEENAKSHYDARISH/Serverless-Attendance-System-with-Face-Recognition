@@ -3,7 +3,7 @@ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const crypto = require("node:crypto");
 const { json } = require("./common/http");
 
-// 🔥 CRITICAL FIX
+// Same config as before (important for presigned URL stability)
 const s3 = new S3Client({
   region: process.env.AWS_REGION,
   forcePathStyle: false,
@@ -13,13 +13,13 @@ const s3 = new S3Client({
 
 exports.handler = async () => {
   const uploadId = crypto.randomUUID();
-  const key = `employees/${uploadId}.jpg`;
+
+  // ✅ KEY CHANGE: use raw/ for check-in
+  const key = `raw/${uploadId}.jpg`;
 
   const command = new PutObjectCommand({
-    Bucket: process.env.EMPLOYEE_PHOTOS_BUCKET,
+    Bucket: process.env.RAW_UPLOAD_BUCKET, // 👈 IMPORTANT (not employee bucket)
     Key: key,
-    // ❌ DO NOT ADD ContentType
-    // ❌ DO NOT ADD Checksum
   });
 
   const uploadUrl = await getSignedUrl(s3, command, {

@@ -9,6 +9,10 @@ const {
 } = require("@aws-sdk/lib-dynamodb");
 const { json, badRequest, forbidden } = require("./common/http");
 const { hasAdminAccess } = require("./common/auth");
+const { S3Client } = require("@aws-sdk/client-s3");
+const {
+  CognitoIdentityProviderClient,
+} = require("@aws-sdk/client-cognito-identity-provider");
 
 const rekognition = new RekognitionClient({});
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));

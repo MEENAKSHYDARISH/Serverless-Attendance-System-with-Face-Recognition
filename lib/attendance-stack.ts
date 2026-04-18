@@ -38,7 +38,6 @@ export class AttendanceStack extends cdk.Stack {
     const rawUploadBucket = new s3.Bucket(this, "RawUploadBucket", {
       bucketName: `${appName}-raw-${this.account}`,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-      encryption: s3.BucketEncryption.KMS,
       encryptionKey: dataKey,
       enforceSSL: true,
       eventBridgeEnabled: false,
@@ -226,7 +225,14 @@ export class AttendanceStack extends cdk.Stack {
       baseEnv,
       nodeRuntime,
     );
+    const presignCheckinFn = this.createFn(
+      "PresignCheckinFn",
+      "services/presign-checkin-upload",
+      baseEnv,
+      nodeRuntime,
+    );
 
+    rawUploadBucket.grantPut(presignCheckinFn);
     rawUploadBucket.grantPut(presignFn, "raw/*");
     rawUploadBucket.grantRead(recognizeFn, "raw/*");
     rawUploadBucket.grantRead(registerFn, "raw/*");
@@ -234,6 +240,7 @@ export class AttendanceStack extends cdk.Stack {
     employeePhotosBucket.grantReadWrite(registerFn);
     reportsBucket.grantReadWrite(dailyCloseoutFn);
     reportsBucket.grantReadWrite(weeklyAnalyticsFn);
+    employeePhotosBucket.grantPut(presignFn);
 
     employeesTable.grantReadWriteData(registerFn);
     employeesTable.grantReadData(recognizeFn);
@@ -315,7 +322,6 @@ export class AttendanceStack extends cdk.Stack {
         "PresignIntegration",
         presignFn,
       ),
-      authorizer: jwtAuthorizer,
     });
     httpApi.addRoutes({
       path: "/result/{upload_id}",
@@ -324,7 +330,15 @@ export class AttendanceStack extends cdk.Stack {
         "GetResultIntegration",
         getResultFn,
       ),
-      authorizer: jwtAuthorizer,
+    });
+    httpApi.addRoutes({
+      path: "/checkin-upload-url",
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new integrations.HttpLambdaIntegration(
+        "PresignCheckinIntegration",
+        presignCheckinFn,
+      ),
+      // ❗ NO authorizer (public kiosk)
     });
     httpApi.addRoutes({
       path: "/admin/register-employee",

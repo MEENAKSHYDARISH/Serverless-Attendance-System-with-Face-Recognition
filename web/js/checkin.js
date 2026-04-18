@@ -15,14 +15,17 @@ async function startCamera() {
   }
 }
 
-// 🟢 STEP 1: Get upload URL
+// 🟢 STEP 1: Get upload URL (✅ FIXED ENDPOINT)
 async function getUploadUrl() {
-  const res = await fetch(`${window.APP_CONFIG.API_BASE_URL}/upload-url`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
+  const res = await fetch(
+    `${window.APP_CONFIG.API_BASE_URL}/checkin-upload-url`, // ✅ CHANGED
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
     },
-  });
+  );
 
   const data = await res.json();
 
@@ -31,30 +34,31 @@ async function getUploadUrl() {
     throw new Error(data.message || "Failed to get upload URL");
   }
 
-  // Handle API Gateway format
   return typeof data.body === "string" ? JSON.parse(data.body) : data;
 }
 
-// 🟢 STEP 2: Upload image to S3
+// 🟢 STEP 2: Upload image to S3 (✅ added validation)
 async function uploadImage(uploadUrl, blob) {
-  await fetch(uploadUrl, {
+  const res = await fetch(uploadUrl, {
     method: "PUT",
     headers: {
       "Content-Type": "image/jpeg",
     },
     body: blob,
   });
+
+  if (!res.ok) {
+    throw new Error("Image upload failed");
+  }
 }
 
-// 🟢 STEP 3: Poll result
+// 🟢 STEP 3: Poll result (unchanged but solid)
 async function pollResult(uploadId) {
   for (let i = 0; i < 10; i++) {
     const res = await fetch(
       `${window.APP_CONFIG.API_BASE_URL}/result/${uploadId}`,
-      {
-        headers: {},
-      },
     );
+
     const data = await res.json();
 
     if (!res.ok) {
@@ -78,7 +82,7 @@ async function pollResult(uploadId) {
 // 🎯 Main flow
 async function captureAndSubmit() {
   try {
-    resultBox.textContent = "Capturing...";
+    resultBox.textContent = "📸 Capturing...";
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -89,22 +93,28 @@ async function captureAndSubmit() {
       canvas.toBlob(resolve, "image/jpeg", 0.92),
     );
 
+    if (!blob) throw new Error("Failed to capture image");
+
     // STEP 1
     const presign = await getUploadUrl();
     console.log("PRESIGN RESPONSE:", presign);
 
-    // STEP 2 ✅ FIXED keys
+    // STEP 2
     await uploadImage(presign.uploadUrl, blob);
 
-    resultBox.textContent = "Uploaded. Waiting for recognition...";
+    resultBox.textContent = "⏳ Processing face recognition...";
 
-    // STEP 3 ✅ FIXED keys
+    // STEP 3
     const result = await pollResult(presign.uploadId);
 
-    resultBox.textContent = JSON.stringify(result, null, 2);
+    if (result.state === "TIMEOUT") {
+      resultBox.textContent = "⚠️ Recognition taking too long. Try again.";
+    } else {
+      resultBox.textContent = JSON.stringify(result, null, 2);
+    }
   } catch (err) {
     console.error(err);
-    resultBox.textContent = "Error: " + err.message;
+    resultBox.textContent = "❌ Error: " + err.message;
   }
 }
 

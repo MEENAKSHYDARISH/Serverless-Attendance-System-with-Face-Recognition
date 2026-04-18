@@ -46,13 +46,18 @@ async function registerEmployee() {
     }
 
     // upload image to S3
-    await fetch(uploadData.uploadUrl, {
+
+    // upload image to S3
+    const uploadResponse = await fetch(uploadData.uploadUrl, {
       method: "PUT",
-      body: file,
-      headers: {
-        "Content-Type": "image/jpeg",
-      },
+      body: file, // ✅ use original file
     });
+
+    if (!uploadResponse.ok) {
+      console.error("S3 UPLOAD FAILED");
+      alert("Image upload failed");
+      return; // 🚫 STOP here if upload fails
+    }
 
     // send to backend
     const res = await fetch(
